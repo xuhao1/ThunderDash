@@ -35,3 +35,6 @@ _ReSharper*/
 #Nuget packages folder
 packages/
 .*DS_STORE
+build
+dist
+/main.spec
