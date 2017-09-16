@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HeadTrack from Motion</title>
+</head>
+<body>
+<h2>This page is grab your Phone motion to control POV of war thunder</h2>
+system status is<p id="status">not online</p><br/>
+Your system <p id="doeSupported">not support</p><br/>
+Euler Yaw Pitch Roll <p id="ypr"></p>
+<script>
+    var ws = new WebSocket("ws://"+window.location.host+"/pov");
+    ws.onopen = function (event) {
+        document.getElementById("status").innerHTML = "Online";
+    };
+    ws.onclose = function (event) {
+        document.getElementById("status").innerHTML = "off online";
+    };
+
+    function deviceOrientationHandler(e) {
+        console.log(e);
+        if (e.alpha === null) {
+            document.getElementById("doeSupported").innerHTML = "YPR is none";
+            return;
+        }
+        var yaw = e.alpha;
+        var pitch = e.beta;
+        var roll = e.gamma;
+        var ypr = [Math.floor(yaw),Math.floor(pitch),Math.floor(roll)];
+        document.getElementById("ypr").innerText = ypr;
+        var data = {quat:getQuaternion(yaw,pitch,roll)};
+        ws.send(JSON.stringify(data));
+    }
+
+    function getQuaternion(alpha, beta, gamma) {
+        var degtorad = Math.PI / 180;
+        var _x = beta ? beta * degtorad : 0; // beta value
+        var _y = gamma ? gamma * degtorad : 0; // gamma value
+        var _z = alpha ? alpha * degtorad : 0; // alpha value
+
+        var cX = Math.cos(_x / 2);
+        var cY = Math.cos(_y / 2);
+        var cZ = Math.cos(_z / 2);
+        var sX = Math.sin(_x / 2);
+        var sY = Math.sin(_y / 2);
+        var sZ = Math.sin(_z / 2);
+
+        //
+        // ZXY quaternion construction.
+        //
+
+        var w = cX * cY * cZ - sX * sY * sZ;
+        var x = sX * cY * cZ - cX * sY * sZ;
+        var y = cX * sY * cZ + sX * cY * sZ;
+        var z = cX * cY * sZ + sX * sY * cZ;
+
+        return [w, x, y, z];
+
+    }
+
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', deviceOrientationHandler, false);
+        document.getElementById("doeSupported").innerText = "Supported!";
+    }
+
+
+</script>
+</body>
+</html>
