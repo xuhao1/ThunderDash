@@ -1,0 +1,204 @@
+<!-- 
+
+jQuery Flight Indicators plugin
+By Sébastien Matton (seb_matton@hotmail.com)
+Published under GPLv3 License.
+
+https://github.com/sebmatton/jQuery-Flight-Indicators
+ 
+ -->
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+     <!-- Importing jQuery library -->
+    <script src="js/jquery.min.js"></script>
+
+    <!-- Syntax coloration -->
+    <link rel="stylesheet" type="text/css" href="jQuery-Flight-Indicators/_examples_data/prism/prism.css"/>
+    <!-- This page style -->
+    <link rel="stylesheet" type="text/css" href="jQuery-Flight-Indicators/_examples_data/style.css"/>
+    <!-- Flight Indicators library styles -->
+    <link rel="stylesheet" type="text/css" href="jQuery-Flight-Indicators/css/flightindicators.css"/>
+    <title>ThunderDash</title>
+    <link rel="stylesheet" type="text/css" href="jquery-ui-1.12.1/jquery-ui.css">
+    <!--<link rel="stylesheet" href="/resources/demos/style.css">-->
+    <script src="jquery-ui-1.12.1/jquery-ui.js"></script>
+    <script src="js/jquery.ui.touch-punch.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <!-- Introduction -->
+    <div class="examples">
+        <div>
+            <span id="airspeed"></span>
+            <span id="attitude"></span>
+        </div>
+        <div>
+            <span id="altimeter"></span>
+            <span id="turn_coordinator"></span>
+        </div>
+        <div>
+            <span id="heading"></span>
+            <span id="variometer"></span>
+        </div>
+    </div>
+    <div style="bottom:0%;right: 30%;position: fixed">
+        <p>Speed <span id="speed">0</span> km/h</p>
+        <p>Altitude <span id="alt">0</span> m</p>
+        <p>Rate of Climb <span id="ROC">0</span> m/s</p>
+        <p>Pitch <span id="pitch">0</span> deg</p>
+        <p>AoA <span id="AOA">0</span>deg</p>
+        <button id="FullScreenBTN" onclick="toggleFullScreen()">Full Screen</button>
+    </div>
+    <div id="slider-vertical" style="height:80%;position: fixed;left: 5%;top: 10%;"></div>
+    <!-- Syntax color -->
+    <script src="jQuery-Flight-Indicators/_examples_data/prism/prism.js"></script>
+
+
+    <!-- Importing the FlightIndicators library -->
+    <script src="jQuery-Flight-Indicators/js/jquery.flightindicators.js"></script>
+
+    <!-- Let start our scripts -->
+    <script type="text/javascript">
+        //window.scrollTo(0, 1);
+
+        $("body").on("touchmove", function (event) {
+            event.preventDefault;
+            document.body.requestFullscreen();
+        }, false);
+
+        function toggleFullScreen() {
+            $("#FullScreenBTN").text("Try Full");
+            var doc = window.document;
+            var docEl = doc.documentElement;
+            //document.body.requestFullscreen();
+            //$("#FullScreenBTN").text("Try Full1");
+            //return;
+            var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+            var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+            if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+                requestFullScreen.call(docEl);
+            }
+            else {
+                cancelFullScreen.call(doc);
+            }
+            $("#FullScreenBTN").text("Exit Full");
+        }
+
+        //toggleFullScreen();
+        // First static example
+        var dsize = 200;
+        var attitude = $.flightIndicator('#attitude', 'attitude', {
+            roll: 0,
+            pitch: 0,
+            size: dsize,
+            showBox: true,
+            img_directory: "jQuery-Flight-Indicators/img/"
+        });
+        var heading = $.flightIndicator('#heading', 'heading', {
+            heading: 0,
+            showBox: true,
+            size: dsize,
+            img_directory: "jQuery-Flight-Indicators/img/"
+        });
+        var variometer = $.flightIndicator('#variometer', 'variometer', {
+            vario: 0,
+            showBox: true,
+            size: dsize,
+            img_directory: "jQuery-Flight-Indicators/img/"
+        });
+        var airspeed = $.flightIndicator('#airspeed', 'airspeed', {
+            showBox: false,
+            size: dsize,
+            img_directory: "jQuery-Flight-Indicators/img/"
+        });
+        var altimeter = $.flightIndicator('#altimeter', 'altimeter', {
+            img_directory: "jQuery-Flight-Indicators/img/",
+            size: dsize
+        });
+        var turn_coordinator = $.flightIndicator('#turn_coordinator', 'turn_coordinator', {
+            turn: 0,
+            img_directory: "jQuery-Flight-Indicators/img/",
+            size: dsize
+        });
+
+
+        //var ws_2_proxy = new WebSocket("ws://192.168.1.156:58951");
+        var ws_2_proxy = new WebSocket("ws://"+window.location.host+"go/flight_info");
+        var k = 0;
+
+        function proccess_map(map) {
+            console.log("Try to process map");
+            var url = URL.createObjectURL(map);
+            console.log(url);
+            $("#map_img").attr("src", url);
+        }
+
+        ws_2_proxy.onmessage = function (msg) {
+            //console.log(msg);
+            if (msg.data instanceof Blob) {
+                proccess_map(msg.data);
+                return;
+            }
+            data = eval("(" + msg.data + ")");
+            //console.log(data);
+            attitude.setRoll(data.indicator.aviahorizon_roll);
+            attitude.setPitch(-data.indicator.aviahorizon_pitch);
+            $("#pitch").text(Math.floor(-data.indicator.aviahorizon_pitch));
+            heading.setHeading(data.indicator.compass);
+            altimeter.setAltitude(data.indicator.altitude_10k * 0.3048);
+            $("#alt").text(Math.floor(data.indicator.altitude_10k * 0.3048));
+
+            variometer.setVario(data.indicator.vario);
+            $("#ROC").text(Math.floor(data.indicator.vario));
+
+            airspeed.setAirSpeed(data.indicator.speed * 3.6);
+            $("#speed").text(Math.floor(data.indicator.speed * 3.6));
+
+            airspeed.setPressure(0);
+            turn_coordinator.setTurn(data.indicator.turn * 180 / 3.1415);
+
+            $("#AOA").text(data.state["AoA, deg"]);
+            //console.log(data.indicator.turn*180/3.1415);
+            //console.log(data.indicator.altitude_10k*0.3048);
+
+            k++;
+            if (k % 100 == 0) {
+                console.log(data.indicator);
+                console.log(data.state);
+                //data[]
+            }
+        }
+    </script>
+    <script>
+        ws_con = new WebSocket("ws://"+window.location.host+"/flight_control");
+        ws_con.onopen = function (event) {
+            var data = {
+                throttle:0
+            };
+            ws_con.send(JSON.stringify(data));
+        };
+        $(function () {
+            $("#slider-vertical").slider({
+                orientation: "vertical",
+                range: "min",
+                min: 0,
+                max: 100,
+                value: 0,
+                slide: function (event, ui) {
+                    //$("#amount").val(ui.value);
+                    var data = {throttle:ui.value};
+                    ws_con.send(JSON.stringify(data));
+                }
+            });
+            //$("#amount").val($("#slider-vertical").slider("value"));
+        });
+    </script>
+    <img src="" id="map_img" style="width:40%;position: fixed;right: 5%; top:10%"/>
+
+</div>
+</body>
+</html>
