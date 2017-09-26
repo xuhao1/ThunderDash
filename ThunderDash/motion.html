@@ -29,7 +29,7 @@ Euler Yaw Pitch Roll <p id="ypr"></p>
         var roll = e.gamma;
         var ypr = [Math.floor(yaw),Math.floor(pitch),Math.floor(roll)];
         document.getElementById("ypr").innerText = ypr;
-        var data = {quat:getQuaternion(yaw,pitch,roll)};
+    var data = {quat:getQuaternion(yaw,pitch,  roll)};
         ws.send(JSON.stringify(data));
     }
 
