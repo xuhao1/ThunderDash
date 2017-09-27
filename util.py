@@ -27,3 +27,8 @@ def toAxisAngle(quat):
         y = qy / sqrt(1 - qw * qw)
         z = qz / sqrt(1 - qw * qw)
         return np.array([angle*x,angle*y,angle*z])
+
+def JoyEXP(v,exp):
+    if math.fabs(v) < 0.001:
+        return 0
+    return math.pow(math.fabs(v),exp)* v / math.fabs(v)

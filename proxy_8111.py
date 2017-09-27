@@ -8,9 +8,8 @@ import datetime
 
 
 class proxy_8111:
-
     def __init__(self):
-        self.msg = dict()
+        self.msg = {"indicator": None, "state": None}
         self.map_bin = None
         self.tick = 0
         self.ws = None
@@ -28,7 +27,7 @@ class proxy_8111:
             if self.tick % 500 == 1 or self.map_bin is None:
                 self.map_bin = urllib.request.urlopen("http://127.0.0.1:8111/map.img").read()
                 self.map_sent = False
-                #time.sleep(0.01)
+                # time.sleep(0.01)
             self.wt_online = True
         except:
             self.wt_online = False
@@ -37,14 +36,13 @@ class proxy_8111:
         if self.wt_online:
             self.cs.sendto(json.dumps(self.msg).encode(), ('192.168.1.255', 58950))
 
-
     def boardcast_ws(self):
-        if not(self.ws is None) and self.wt_online:
+        if not (self.ws is None) and self.wt_online:
             self.ws.write_message(json.dumps(self.msg).encode())
             if not self.map_sent:
                 print("sending map")
                 self.map_sent = True
-                self.ws.write_message(self.map_bin,True)
+                self.ws.write_message(self.map_bin, True)
 
     def update(self):
         self.refresh_from_8111()
