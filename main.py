@@ -30,8 +30,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.roc.setFont(QFont('SansSerif', 15))
         self.roc.setFixedSize(400, 50)
 
+        self.ele = QLabel('ELE: ', self)
+        self.ele.move(0, 100)
+        self.ele.setFont(QFont('SansSerif', 15))
+        self.ele.setFixedSize(400, 50)
+
         self.aircraft_con.run()
-        self.setGeometry(50, 500, 500, 200)
+        self.setGeometry(50, 500, 500, 400)
 
         self.timer = QBasicTimer()
         self.timer.start(10, self)
@@ -39,6 +44,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def timerEvent(self, e):
         self.trimroll.setText('TrimAil {0:.1f}%'.format(self.aircraft_con.roll_trim))
         self.roc.setText("ROC: {:.1f} m/s".format(self.aircraft_con.get_roc()))
+        self.ele.setText("ELE: {:.2f}% Pitch {:.2f} deg".format(self.aircraft_con.get_ele(),self.aircraft_con.get_pitch()))
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

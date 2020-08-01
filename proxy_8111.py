@@ -24,6 +24,9 @@ class proxy_8111:
             self.tick = self.tick + 1
             self.msg["indicator"] = json.loads(urllib.request.urlopen("http://127.0.0.1:8111/indicators").read())
             self.msg["state"] = json.loads(urllib.request.urlopen("http://127.0.0.1:8111/state").read())
+            self.msg["mapobj"] = json.loads(urllib.request.urlopen("http://127.0.0.1:8111/map_obj.json").read())
+            self.msg["mapinfo"] = json.loads(urllib.request.urlopen("http://127.0.0.1:8111/map_info.json").read())
+            # print(self.msg["mapobj"])
             if self.tick % 500 == 1 or self.map_bin is None:
                 self.map_bin = urllib.request.urlopen("http://127.0.0.1:8111/map.img").read()
                 self.map_sent = False

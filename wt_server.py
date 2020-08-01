@@ -3,9 +3,10 @@ import tornado.web
 import tornado.websocket
 import time
 import os
-import pyvjoy
+# import pyvjoy
 import json
 from util import *
+import asyncio
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
@@ -30,6 +31,7 @@ class WTWebSocket(tornado.websocket.WebSocketHandler):
 
     def check_origin(self, origin):
         return True
+
 class WTControlSocket(tornado.websocket.WebSocketHandler):
 
     def initialize(self, joy):
@@ -44,7 +46,7 @@ class WTControlSocket(tornado.websocket.WebSocketHandler):
             data = json.loads(message)
             #print("set throttle to {0}".format(data["throttle"]))
             th = (data["throttle"] / 100 - 0.5)*2
-            self.joy.set_axis(pyvjoy.HID_USAGE_SL0, toHexCmd(th))
+            # self.joy.set_axis(pyvjoy.HID_USAGE_SL0, toHexCmd(th))
         except Exception as e:
             print("Recieve wrong message {0}".format(e))
 
@@ -53,6 +55,11 @@ class WTControlSocket(tornado.websocket.WebSocketHandler):
 
     def check_origin(self, origin):
         return True
+
+class MyStaticFileHandler(tornado.web.StaticFileHandler):
+    def set_extra_headers(self, path):
+        # Disable cache
+        self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
 
 class WTPOVSocket(tornado.websocket.WebSocketHandler):
 
@@ -77,17 +84,24 @@ class WTPOVSocket(tornado.websocket.WebSocketHandler):
 
     def check_origin(self, origin):
         return True
+
 def make_app(worker,joy,aircraft_con):
+    import sys
+    if sys.platform == 'win32':
+        from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+        asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
+
+    asyncio.set_event_loop(asyncio.new_event_loop())
     return tornado.web.Application([
         (r"/flight_info", WTWebSocket,{'worker':worker}),
         (r"/flight_control", WTControlSocket, {'joy': joy}),
         (r"/pov", WTPOVSocket, {'aircraft_con': aircraft_con}),
-        (r'/(.*)', tornado.web.StaticFileHandler, {'path': os.path.dirname(os.path.realpath(__file__))+'/ThunderDash/'}),
+        (r'/(.*)', MyStaticFileHandler, {'path': os.path.dirname(os.path.realpath(__file__))+'/ThunderDash/'}),
     ])
 
 def start_wt_server(aircraft_con):
-    print("Start wt servers")
+    print("Start wt servers on port 8888")
     app = make_app(aircraft_con.proxy_8111_worker, aircraft_con.vjoy,aircraft_con)
     app.listen(8888)
     print("Start Listen")
-    tornado.ioloop.IOLoop.current().start()
+    tornado.ioloop.IOLoop.instance().start()

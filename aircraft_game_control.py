@@ -9,6 +9,7 @@ from wt_server import *
 from util import *
 import pygame
 from pynput.keyboard import Key, Listener
+import time
 
 class game_aircraft_control:
     def __init__(self):
@@ -33,12 +34,12 @@ class game_aircraft_control:
 
         self.roll_trim = 0
         self.aileron = 0
-        try:
-            self.master = mavutil.mavlink_connection("COM3", baud="230400")
-            print("Link to COM3 with mavlink")
-        except Exception as e:
-            print("No master Found {0}".format(e))
-            self.master = None
+        # try:
+        #     self.master = mavutil.mavlink_connection("COM3", baud="230400")
+        #     print("Link to COM3 with mavlink")
+        # except Exception as e:
+        #     print("No master Found {0}".format(e))
+        #     self.master = None
 
     def init_external_joys(self):
         pygame.init()
@@ -116,8 +117,8 @@ class game_aircraft_control:
         else:
             q_now = self.zoom_base_quat.__mul__(q_now)
             cmd = self.get_POVXYZ_from_quat(q_now)
-            cmd[2] = cmd[2] * 2.0 + self.zoom_base_povx
-            cmd[1] = cmd[1] * 0.4 + self.zoom_base_povy
+            cmd[2] = cmd[2] * 4.0 /self.zoom + self.zoom_base_povx
+            cmd[1] = cmd[1] * 0.8 /self.zoom + self.zoom_base_povy
             pass
 
         if self.cmdpov is None:
@@ -137,7 +138,7 @@ class game_aircraft_control:
         self.pov_x_offset, self.pov_y_offset = self.t16000m.get_hat(0)
         if not (self.twcs is None):
             _, trimrollbtn = self.twcs.get_hat(0)
-            self.roll_trim = self.roll_trim - trimrollbtn * 0.05
+            self.roll_trim = self.roll_trim - trimrollbtn * 0.02
             pass
 
         # self.pov_x_offset, self.pov_y_offset = self.twcs.get_axis(0),-self.twcs.get_axis(1)
@@ -146,7 +147,9 @@ class game_aircraft_control:
 
         if self.t16000m.get_button(1) > 0:
             if not self.zoom_on_press:
-                self.zoom = 1 - self.zoom
+                self.zoom = self.zoom + 0.5
+                if self.zoom > 1:
+                    self.zoom = 0
             self.zoom_on_press = True
         else:
             self.zoom_on_press = False
@@ -154,13 +157,19 @@ class game_aircraft_control:
             self.q_base = None
 
         self.set_aileron(self.t16000m.get_axis(0))
-
+        self.set_elevator(self.t16000m.get_axis(1))
         self.set_zoom(self.zoom)
 
     def set_aileron(self,v):
-        v = JoyEXP(v,1) + self.roll_trim / 100
+        v = JoyEXP(v,1.5) + self.roll_trim / 100
         self.vjoy.set_axis(pyvjoy.HID_USAGE_X, toHexCmd(v))
         pass
+
+    def set_elevator(self,v):
+        if self.t16000m.get_button(13) > 0:
+            f = 0.1
+            v = v + math.cos(2*math.pi*f*time.time())*0.01
+        self.vjoy.set_axis(pyvjoy.HID_USAGE_Y, toHexCmd(v))
 
     def main_thread(self):
         if not (self.master is None):
@@ -177,11 +186,23 @@ class game_aircraft_control:
             self.indicator = self.proxy_8111_worker.msg["indicator"]
             self.state = self.proxy_8111_worker.msg["state"]
 
+    def get_ele(self):
+        try:
+            return self.state["elevator, %"]
+        except:
+            return 0
+    def get_pitch(self):
+        try:
+            return - self.indicator["aviahorizon_pitch"]
+        except:
+            return 0
+
     def get_roc(self):
         try:
             return self.indicator["vario"]
         except:
             return math.nan
+
     def run(self):
         print("Run....")
         self.th0 = threading.Thread(target=self.proxy_8111_worker.run)

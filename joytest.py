@@ -78,6 +78,7 @@ while done == False:
     # For each joystick:
     for i in range(joystick_count):
         joystick = pygame.joystick.Joystick(i)
+        print(joystick.get_name())
         #if not(joystick.get_name() == "TWCS Throttle"):
         if not (joystick.get_name() == "T.16000M"):
                 continue;
